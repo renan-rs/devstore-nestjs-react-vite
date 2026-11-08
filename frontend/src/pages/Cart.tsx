@@ -1,51 +1,26 @@
-import { useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '../store/useCartStore';
-import { api } from '../services/api';
 
 export function Cart() {
     const { cart, removeFromCart, clearCart, totalPrice } = useCartStore();
-    const [checkingOut, setCheckingOut] = useState(false);
     const navigate = useNavigate();
-
-    const userStr = localStorage.getItem('@DevStore:user');
-    const user = userStr ? JSON.parse(userStr) : null;
-
-    async function handleCheckout() {
-        if (!user) {
-            alert('Você precisa estar logado para finalizar o pedido.');
-            navigate('/login');
-            return;
-        }
-
-        if (cart.length === 0) return;
-
-        setCheckingOut(true);
-        try {
-            const orderPayload = {
-                items: cart.map((item) => ({
-                    productId: item.product.id,
-                    quantity: item.quantity,
-                })),
-            };
-
-            await api.post('/orders', orderPayload);
-            alert('Pedido realizado com sucesso! 🎉');
-            clearCart();
-            navigate('/');
-        } catch (err: any) {
-            console.error(err);
-            alert(err.response?.data?.message || 'Erro ao finalizar o pedido.');
-        } finally {
-            setCheckingOut(false);
-        }
-    }
 
     return (
         <div className="min-h-screen bg-gray-50 p-8">
             <div className="max-w-4xl mx-auto">
                 <header className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-extrabold text-gray-900">Seu Carrinho 🛒</h1>
+                    <div>
+                        <h1 className="text-3xl font-extrabold text-gray-900">Seu Carrinho 🛒</h1>
+                        {cart.length > 0 && (
+                        <button
+                            onClick={clearCart}
+                            className="text-xs text-red-500 hover:underline mt-1 block"
+                        >
+                            Esvaziar carrinho inteiro
+                        </button>
+                        )}
+                    </div>
                     <button
                         onClick={() => navigate('/')}
                         className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm font-medium"
@@ -98,11 +73,10 @@ export function Cart() {
                             </div>
 
                             <button
-                                onClick={handleCheckout}
-                                disabled={checkingOut}
-                                className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                                onClick={() => navigate('/checkout')}
+                                className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
                             >
-                                {checkingOut ? 'Processando...' : 'Finalizar Pedido'}
+                                Ir para o Checkout
                             </button>
                         </div>
                     </div>
