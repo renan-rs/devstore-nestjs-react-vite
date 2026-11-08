@@ -3,11 +3,9 @@ import { Home } from "./pages/Home";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { AdminProducts } from "./pages/AdminProducts";
-import { CartProvider } from "./context/CartContext";
 
 function App() {
   return (
-    <CartProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -16,7 +14,6 @@ function App() {
           <Route path="/admin/products" element={<AdminProducts />} />
         </Routes>
       </BrowserRouter>
-    </CartProvider>
   );
 }
 
