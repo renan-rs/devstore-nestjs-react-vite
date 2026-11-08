@@ -61,7 +61,7 @@ export function Home() {
                         )}
 
                         <button
-                            onClick={() => navigate('/')}
+                            onClick={() => navigate('/cart')}
                             className="relative px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition flex items-center gap-2"
                         >
                             🛒 Carrinho
@@ -88,13 +88,13 @@ export function Home() {
                                     src={product.imageUrl}
                                     alt={product.name}
                                     className="h-48 w-full object-cover cursor-pointer hover:opacity-90 transition"
-                                    onClick={() => navigate(`/`)}
+                                    onClick={() => navigate(`/product/${product.id}`)}
                                 />
                                 <div className="p-5 flex flex-col flex-1">
                                     <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">{product.category}</span>
                                     <h3
                                         className="text-xl font-bold text-gray-800 mb-2 cursor-pointer hover:text-blue-600 transition"
-                                        onClick={() => navigate(`/`)}
+                                        onClick={() => navigate(`/product/${product.id}`)}
                                     >
                                         {product.name}
                                     </h3>
