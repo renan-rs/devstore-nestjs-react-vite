@@ -36,6 +36,12 @@ export function Home() {
                         {user ? (
                             <div className="flex items-center gap-3">
                                 <span className="text-sm font-medium text-gray-700">Olá, {user.name}</span>
+                                <button
+                                    onClick={() => navigate('/orders')}
+                                    className="px-3 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition"
+                                >
+                                    Meus Pedidos
+                                </button>
                                 {user.role === 'ADMIN' && (
                                     <button
                                         onClick={() => navigate('/admin/products')}
