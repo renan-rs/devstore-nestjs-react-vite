@@ -12,5 +12,28 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+    container_name: devstore_backend
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgrespassword:5432/devstore?schema=public
+      JWT_SECRET: super-secret-jwt-key
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: devstore_frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
 volumes:
   pgdata:
