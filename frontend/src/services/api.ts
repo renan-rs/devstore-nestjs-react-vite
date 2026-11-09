@@ -15,3 +15,21 @@ api.interceptors.request.use((config) => {
     }
     return config;
 })
+
+// Se o token for rejeitado (expirado, usuário removido), encerra a sessão e volta para o login.
+// Ignora as próprias rotas de auth, onde 401 significa apenas "credenciais inválidas".
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const url: string = error.config?.url ?? '';
+        const isAuthRoute = url.startsWith('/auth/');
+
+        if(error.response?.status === 401 && !isAuthRoute){
+            localStorage.removeItem('@DevStore:token');
+            localStorage.removeItem('@DevStore:user');
+            window.location.href = '/login';
+        }
+
+        return Promise.reject(error);
+    }
+);
