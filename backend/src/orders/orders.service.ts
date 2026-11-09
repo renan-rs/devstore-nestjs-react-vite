@@ -1,8 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { OrderItem } from '@prisma/client';
-import { CreateOrderItemDto } from './dto/create-order-item.dto';
 
 @Injectable()
 export class OrdersService {
@@ -36,7 +34,7 @@ export class OrdersService {
         }
 
         // Cria o pedido e reduz o estoque em uma transação segura
-        return this.prisma.$transaction(async (tx) => {
+        return this.prisma.$transaction(async (tx: any) => {
             // Cria o pedido principal
             const order = await tx.order.create({
                 data: {
