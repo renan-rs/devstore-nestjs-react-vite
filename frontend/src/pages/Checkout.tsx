@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCartStore } from '../store/useCartStore';
+import { useCartStore, selectTotalPrice } from '../store/useCartStore';
 import { api } from '../services/api';
 
 export function Checkout() {
-    const { cart, totalPrice, clearCart } = useCartStore();
+    const { cart, clearCart } = useCartStore();
+    const totalPrice = useCartStore(selectTotalPrice);
     const [loading, setLoading] = useState(false);
     const [address, setAddress] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('credit_card');

@@ -1,9 +1,10 @@
 
 import { useNavigate } from 'react-router-dom';
-import { useCartStore } from '../store/useCartStore';
+import { useCartStore, selectTotalPrice } from '../store/useCartStore';
 
 export function Cart() {
-    const { cart, removeFromCart, clearCart, totalPrice } = useCartStore();
+    const { cart, removeFromCart, clearCart } = useCartStore();
+    const totalPrice = useCartStore(selectTotalPrice);
     const navigate = useNavigate();
 
     return (

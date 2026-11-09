@@ -21,9 +21,13 @@ interface CartState {
     addToCart: (product: Product) => void;
     removeFromCart: (productId: string) => void;
     clearCart: () => void;
-    totalItems: number;
-    totalPrice: number;
 }
+
+export const selectTotalItems = (state: CartState) =>
+    state.cart.reduce((sum, item) => sum + item.quantity, 0);
+
+export const selectTotalPrice = (state: CartState) =>
+    state.cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
 
 export const useCartStore = create<CartState>()(
     persist(
@@ -48,12 +52,6 @@ export const useCartStore = create<CartState>()(
                 set({ cart: get().cart.filter((item) => item.product.id !== productId) });
             },
             clearCart: () => set({ cart: [] }),
-            get totalItems() {
-                return get().cart.reduce((sum, item) => sum + item.quantity, 0);
-            },
-            get totalPrice() {
-                return get().cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-            },
         }),
         {
             name: '@DevStore:cart-storage',

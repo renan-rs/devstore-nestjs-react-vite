@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
-import { useCartStore, type Product } from "../store/useCartStore";
+import { useCartStore, selectTotalItems, type Product } from "../store/useCartStore";
 import { useNavigate } from "react-router-dom";
 
 export function Home() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     
-    const totalItems = useCartStore((state) => state.totalItems);
+    const totalItems = useCartStore(selectTotalItems);
     const addToCart = useCartStore((state) => state.addToCart);
     const navigate = useNavigate();
 
@@ -19,6 +19,7 @@ export function Home() {
             .then((res) => setProducts(res.data))
             .catch((err) => console.error(err))
             .finally(() => setLoading(false));
+        console.log(products);
     }, []);
 
     function handleLogout() {
