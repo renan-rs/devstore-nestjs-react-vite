@@ -19,7 +19,6 @@ export function Home() {
             .then((res) => setProducts(res.data))
             .catch((err) => console.error(err))
             .finally(() => setLoading(false));
-        console.log(products);
     }, []);
 
     function handleLogout() {
