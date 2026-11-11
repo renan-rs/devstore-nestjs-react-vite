@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString, Min } from "class-validator";
+import { IsNotEmpty, IsNumber, IsString, IsUUID, Min } from "class-validator";
 
 export class CreateProductDto {
     @IsString()
@@ -21,7 +21,7 @@ export class CreateProductDto {
     @IsNotEmpty({message: 'A URL da imagem é obrigatória'})
     imageUrl: string;
 
-    @IsString()
+    @IsUUID('all', {message: 'A categoria informada é inválida'})
     @IsNotEmpty({message: 'A categoria é obrigatória'})
-    category: string;
+    categoryId: string;
 }
