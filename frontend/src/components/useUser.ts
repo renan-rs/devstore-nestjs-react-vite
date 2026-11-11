@@ -1,22 +1,6 @@
-export interface StoredUser {
-    id: string;
-    name: string;
-    email: string;
-    role: 'ADMIN' | 'USER' | string;
-}
-
-export function getStoredUser(): StoredUser | null {
-    try {
-        const raw = localStorage.getItem('@DevStore:user');
-        return raw ? JSON.parse(raw) : null;
-    } catch {
-        return null;
-    }
-}
-
 export function logout() {
     localStorage.removeItem('@DevStore:token');
-    localStorage.removeItem('@DevStore:user');
+    localStorage.removeItem('@DevStore:user'); // legado: versões antigas guardavam o user aqui
     window.location.href = '/';
 }
 

@@ -39,4 +39,9 @@ export class AuthService {
             user,
         };
     }
+
+    // Perfil atual vindo do banco (fonte da verdade para o role exibido no frontend)
+    async getProfile(userId: string){
+        return this.usersService.findByid(userId);
+    }
 }

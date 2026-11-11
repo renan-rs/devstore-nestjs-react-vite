@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { CreditCard, QrCode, MapPin } from 'lucide-react';
 import { useCartStore, selectTotalPrice } from '../store/useCartStore';
 import { api, getErrorMessage } from '../services/api';
-import { formatBRL, getStoredUser } from '../components/useUser';
+import { formatBRL } from '../components/useUser';
+import { useAuthStore } from '../store/useAuthStore';
 
 export function Checkout() {
     const { cart, clearCart } = useCartStore();
@@ -12,7 +13,7 @@ export function Checkout() {
     const [address, setAddress] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('credit_card');
     const navigate = useNavigate();
-    const user = getStoredUser();
+    const user = useAuthStore((s) => s.user);
 
     async function handleFinalizeOrder(e: React.SyntheticEvent) {
         e.preventDefault();

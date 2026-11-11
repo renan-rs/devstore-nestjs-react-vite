@@ -3,7 +3,7 @@ import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException, NotFoundException } from '@nestjs/common';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -12,6 +12,7 @@ describe('AuthService', () => {
   const mockUsersService = {
     findByEmail: jest.fn(),
     create: jest.fn(),
+    findByid: jest.fn(),
   };
 
   const mockJwtService = {
@@ -69,6 +70,25 @@ describe('AuthService', () => {
       await expect(
         service.login({ email: 'test@example.com', password: 'wrongpassword' })
       ).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('getProfile', () => {
+    it('should return the current user from the database (without password)', async () => {
+      const profile = { id: '1', email: 'test@example.com', name: 'Test User', role: 'ADMIN' };
+      mockUsersService.findByid.mockResolvedValue(profile);
+
+      const result = await service.getProfile('1');
+
+      expect(mockUsersService.findByid).toHaveBeenCalledWith('1');
+      expect(result).toEqual(profile);
+      expect(result).not.toHaveProperty('password');
+    });
+
+    it('should propagate the error when the user no longer exists', async () => {
+      mockUsersService.findByid.mockRejectedValue(new NotFoundException());
+
+      await expect(service.getProfile('missing')).rejects.toThrow(NotFoundException);
     });
   });
 });
