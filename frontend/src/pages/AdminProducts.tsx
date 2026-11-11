@@ -5,6 +5,7 @@ import { api, getErrorMessage } from '../services/api';
 import { inputClass, labelClass } from '../components/ui';
 import { formatBRL } from '../components/useUser';
 import { useCatalogStore } from '../store/useCatalogStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 interface Product {
     id: string;
@@ -28,22 +29,24 @@ export function AdminProducts() {
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const user = useAuthStore((s) => s.user);
+    const authStatus = useAuthStore((s) => s.status);
+    const fetchUser = useAuthStore((s) => s.fetchUser);
 
-    // Verifica se o usuário é admin ou está logado ao carregar a página
+    // O role vem do backend (/auth/me), nunca do localStorage
+    useEffect(() => { fetchUser(); }, [fetchUser]);
+
     useEffect(() => {
-        const userStr = localStorage.getItem('@DevStore:user');
-        if (!userStr) {
+        if (authStatus !== 'done') return;
+        if (!user) {
             navigate('/login');
-            return;
-        }
-        const user = JSON.parse(userStr);
-        if (user.role !== 'ADMIN') {
+        } else if (user.role !== 'ADMIN') {
             alert('Acesso negado! Apenas administradores podem acessar esta página.');
             navigate('/');
+        } else {
+            fetchProducts();
         }
-
-        fetchProducts();
-    }, [navigate]);
+    }, [authStatus, user, navigate]);
 
     // O catálogo compartilhado (nav de categorias, home) é cacheado: força nova busca após mudanças
     function refreshCatalog() {
@@ -105,6 +108,8 @@ export function AdminProducts() {
             alert('Erro ao excluir produto.');
         }
     }
+
+    if (user?.role !== 'ADMIN') return null;
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-8">

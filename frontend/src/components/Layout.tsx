@@ -6,7 +6,8 @@ import {
 } from 'lucide-react';
 import { useCartStore, selectTotalItems } from '../store/useCartStore';
 import { useCatalogStore } from '../store/useCatalogStore';
-import { getStoredUser, logout } from './useUser';
+import { logout } from './useUser';
+import { useAuthStore } from '../store/useAuthStore';
 
 function TopBar() {
     return (
@@ -30,8 +31,12 @@ function Header() {
     const [params] = useSearchParams();
     const [query, setQuery] = useState(params.get('q') ?? '');
     const totalItems = useCartStore(selectTotalItems);
-    const user = getStoredUser();
+    const user = useAuthStore((s) => s.user);
+    const fetchUser = useAuthStore((s) => s.fetchUser);
     const [menuOpen, setMenuOpen] = useState(false);
+
+    // Carrega o usuário real (role incluso) do backend ao abrir o app
+    useEffect(() => { fetchUser(); }, [fetchUser]);
 
     function handleSearch(e: React.SyntheticEvent) {
         e.preventDefault();

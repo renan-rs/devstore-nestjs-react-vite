@@ -26,7 +26,6 @@ api.interceptors.response.use(
 
         if(error.response?.status === 401 && !isAuthRoute){
             localStorage.removeItem('@DevStore:token');
-            localStorage.removeItem('@DevStore:user');
             window.location.href = '/login';
         }
 

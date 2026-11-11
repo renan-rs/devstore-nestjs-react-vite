@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api, getErrorMessage } from '../services/api';
+import { useAuthStore } from '../store/useAuthStore';
 import { AuthShell } from '../components/AuthShell';
 import { inputClass, labelClass } from '../components/ui';
 
@@ -26,7 +27,7 @@ export function Login() {
 
             // Salva o token e dados do usuário no localStorage
             localStorage.setItem('@DevStore:token', access_token);
-            localStorage.setItem('@DevStore:user', JSON.stringify(user));
+            useAuthStore.getState().setUser(user);
 
             // Redireciona para a home
             navigate('/');
