@@ -10,6 +10,7 @@ describe('Orders (e2e)', () => {
   let authToken: string;
   let userId: string;
   let productId: string;
+  let categoryId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -35,7 +36,12 @@ describe('Orders (e2e)', () => {
     authToken = loginResponse.body.access_token;
     userId = loginResponse.body.user.id;
 
-    // 2. Cria um produto de teste no banco para usar nos pedidos
+    // 2. Cria uma categoria e um produto de teste no banco para usar nos pedidos
+    const category = await prisma.category.create({
+        data: {name: 'Testes E2E Orders', slug: 'testes-e2e-orders'},
+    });
+    categoryId = category.id;
+
     const product = await prisma.product.create({
         data: {
             name: 'Produto E2E Test',
@@ -43,7 +49,7 @@ describe('Orders (e2e)', () => {
             price: 100.0,
             stock: 5,
             imageUrl: 'https://via.placeholder.com/150',
-            category: 'Testes',
+            categoryId,
         },
     });
 
@@ -74,7 +80,8 @@ describe('Orders (e2e)', () => {
     // Remove apenas os dados criados por este teste
     await prisma.orderItem.deleteMany({where: {order: {userId}}});
     await prisma.order.deleteMany({where: {userId}});
-    await prisma.product.deleteMany({where: {id: productId}})
+    await prisma.product.deleteMany({where: {id: productId}});
+    await prisma.category.deleteMany({where: {id: categoryId}});
     await prisma.user.deleteMany({where: {email: 'e2e@test.com'}});
     await app.close();
   });
