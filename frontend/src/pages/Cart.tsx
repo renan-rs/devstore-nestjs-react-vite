@@ -1,6 +1,7 @@
-
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { Trash2, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { useCartStore, selectTotalPrice } from '../store/useCartStore';
+import { formatBRL } from '../components/useUser';
 
 export function Cart() {
     const { cart, removeFromCart, clearCart } = useCartStore();
@@ -8,81 +9,66 @@ export function Cart() {
     const navigate = useNavigate();
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-4xl mx-auto">
-                <header className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-3xl font-extrabold text-gray-900">Seu Carrinho 🛒</h1>
-                        {cart.length > 0 && (
-                        <button
-                            onClick={clearCart}
-                            className="text-xs text-red-500 hover:underline mt-1 block"
-                        >
-                            Esvaziar carrinho inteiro
-                        </button>
-                        )}
-                    </div>
-                    <button
-                        onClick={() => navigate('/')}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm font-medium"
-                    >
-                        Continuar Comprando
-                    </button>
-                </header>
-
-                {cart.length === 0 ? (
-                    <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-200 text-center">
-                        <p className="text-gray-500 text-lg mb-4">Seu carrinho está vazio.</p>
-                        <button
-                            onClick={() => navigate('/')}
-                            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
-                        >
-                            Explorar Produtos
-                        </button>
-                    </div>
-                ) : (
-                    <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
-                        <div className="divide-y divide-gray-200 mb-6">
-                            {cart.map((item) => (
-                                <div key={item.product.id} className="py-4 flex justify-between items-center">
-                                    <div className="flex items-center gap-4">
-                                        <img src={item.product.imageUrl} alt={item.product.name} className="w-16 h-16 object-cover rounded-md" />
-                                        <div>
-                                            <h3 className="font-bold text-gray-800">{item.product.name}</h3>
-                                            <p className="text-sm text-gray-500">R$ {item.product.price.toFixed(2)} cada</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-6">
-                                        <span className="font-semibold text-gray-700">Qtd: {item.quantity}</span>
-                                        <span className="font-bold text-gray-900">R$ {(item.product.price * item.quantity).toFixed(2)}</span>
-                                        <button
-                                            onClick={() => removeFromCart(item.product.id)}
-                                            className="text-red-500 hover:text-red-700 text-sm font-medium"
-                                        >
-                                            Remover
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="border-t border-gray-200 pt-6 flex justify-between items-center">
-                            <div>
-                                <span className="text-gray-500 text-sm">Total Geral:</span>
-                                <p className="text-3xl font-black text-gray-900">R$ {totalPrice.toFixed(2)}</p>
-                            </div>
-
-                            <button
-                                onClick={() => navigate('/checkout')}
-                                className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
-                            >
-                                Ir para o Checkout
-                            </button>
-                        </div>
-                    </div>
+        <div className="max-w-6xl mx-auto px-4 py-8">
+            <div className="flex items-end justify-between mb-6">
+                <div>
+                    <h1 className="text-3xl font-black text-slate-900">Meu carrinho</h1>
+                    <p className="text-sm text-slate-500">{cart.length} {cart.length === 1 ? 'item' : 'itens'}</p>
+                </div>
+                {cart.length > 0 && (
+                    <button onClick={clearCart} className="text-sm text-rose-500 hover:underline">Esvaziar carrinho</button>
                 )}
             </div>
+
+            {cart.length === 0 ? (
+                <div className="bg-white p-14 rounded-3xl border border-dashed border-slate-300 text-center">
+                    <span className="mx-auto w-16 h-16 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mb-4"><ShoppingBag size={30} /></span>
+                    <p className="text-slate-700 text-lg font-semibold">Seu carrinho está vazio</p>
+                    <p className="text-sm text-slate-400 mb-6">Explore a loja e adicione produtos.</p>
+                    <Link to="/" className="inline-block px-6 py-3 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition">Explorar produtos</Link>
+                </div>
+            ) : (
+                <div className="grid lg:grid-cols-3 gap-6 items-start">
+                    <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100">
+                        {cart.map((item) => (
+                            <div key={item.product.id} className="p-4 flex items-center gap-4">
+                                <Link to={`/product/${item.product.id}`}>
+                                    <img src={item.product.imageUrl} alt={item.product.name} className="w-20 h-20 object-cover rounded-xl bg-slate-100" />
+                                </Link>
+                                <div className="flex-1 min-w-0">
+                                    <Link to={`/product/${item.product.id}`} className="font-bold text-slate-800 hover:text-brand-600 line-clamp-1">{item.product.name}</Link>
+                                    <p className="text-sm text-slate-500">{formatBRL(item.product.price)} · Qtd: {item.quantity}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-black text-slate-900">{formatBRL(item.product.price * item.quantity)}</p>
+                                    <button onClick={() => removeFromCart(item.product.id)} className="mt-1 inline-flex items-center gap-1 text-xs text-rose-500 hover:text-rose-700">
+                                        <Trash2 size={13} /> Remover
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <aside className="bg-white rounded-2xl border border-slate-200 p-6 lg:sticky lg:top-24">
+                        <h2 className="font-bold text-lg text-slate-900 mb-4">Resumo do pedido</h2>
+                        <div className="flex justify-between text-sm text-slate-600 mb-2"><span>Subtotal</span><span>{formatBRL(totalPrice)}</span></div>
+                        <div className="flex justify-between text-sm text-slate-600 mb-4">
+                            <span>Frete</span>
+                            <span className="text-emerald-600 font-semibold">{totalPrice >= 299 ? 'Grátis' : 'A calcular'}</span>
+                        </div>
+                        <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
+                            <span className="font-bold text-slate-700">Total</span>
+                            <span className="text-2xl font-black text-slate-900">{formatBRL(totalPrice)}</span>
+                        </div>
+                        <button onClick={() => navigate('/checkout')} className="mt-6 w-full py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition">
+                            Finalizar compra
+                        </button>
+                        <Link to="/" className="mt-3 flex items-center justify-center gap-1.5 text-sm text-slate-500 hover:text-brand-600">
+                            <ArrowLeft size={14} /> Continuar comprando
+                        </Link>
+                    </aside>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,131 +1,147 @@
-import { useEffect, useState } from "react";
-import { api } from "../services/api";
-import { useCartStore, selectTotalItems, type Product } from "../store/useCartStore";
-import { useNavigate } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { ArrowRight, Sparkles, X } from "lucide-react";
+import { useCatalogStore } from "../store/useCatalogStore";
+import { ProductCard } from "../components/ProductCard";
+import { formatBRL } from "../components/useUser";
 
 export function Home() {
-    const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState(true);
-    
-    const totalItems = useCartStore(selectTotalItems);
-    const addToCart = useCartStore((state) => state.addToCart);
-    const navigate = useNavigate();
+    const { products, loading } = useCatalogStore();
+    const [params, setParams] = useSearchParams();
+    const q = (params.get('q') ?? '').trim().toLowerCase();
+    const category = params.get('category');
+    const isFiltering = Boolean(q || category);
 
-    const userStr = localStorage.getItem('@DevStore:user');
-    const user = userStr ? JSON.parse(userStr) : null;
+    const categories = Array.from(new Set(products.map((p) => p.category)));
+    const filtered = products.filter((p) =>
+        (!category || p.category === category) &&
+        (!q || p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))
+    );
 
-    useEffect(() => {
-        api.get('/products')
-            .then((res) => setProducts(res.data))
-            .catch((err) => console.error(err))
-            .finally(() => setLoading(false));
-    }, []);
+    const featured = products[0];
+    const newest = [...products].reverse().slice(0, 4);
+    const promoPalette = [
+        'from-violet-600 to-fuchsia-500',
+        'from-amber-400 to-orange-500',
+        'from-emerald-500 to-teal-500',
+        'from-sky-500 to-indigo-500',
+    ];
 
-    function handleLogout() {
-        localStorage.removeItem('@DevStore:token');
-        localStorage.removeItem('@DevStore:user');
-        window.location.reload();
-    }
-    
     return (
-        <div className="min-h-screen bg-gray-50 p-8 pb-24">
-            <div className="max-w-7xl mx-auto">
-                <header className="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                    <h1 className="text-2xl font-extrabold text-gray-900">DevStore 🚀</h1>
-                    <div className="flex items-center gap-4">
-                        {user ? (
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm font-medium text-gray-700">Olá, {user.name}</span>
-                                <button
-                                    onClick={() => navigate('/orders')}
-                                    className="px-3 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition"
-                                >
-                                    Meus Pedidos
-                                </button>
-                                {user.role === 'ADMIN' && (
-                                    <button
-                                        onClick={() => navigate('/admin/products')}
-                                        className="px-3 py-1.5 bg-purple-100 text-purple-700 text-sm font-medium rounded-lg hover:bg-purple-200 transition"
-                                    >
-                                        Painel Admin
-                                    </button>
-                                )}
-                                <button
-                                    onClick={handleLogout}
-                                    className="px-3 py-1.5 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-200 transition"
-                                >
-                                    Sair
-                                </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={() => navigate('/login')}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                            >
-                                Entrar
-                            </button>
-                        )}
-
-                        <button
-                            onClick={() => navigate('/cart')}
-                            className="relative px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition flex items-center gap-2"
-                        >
-                            🛒 Carrinho
-                            {totalItems > 0 && (
-                                <span className="absolute -top-2 -right-2 bg-emerald-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
-                                    {totalItems}
+        <div>
+            {!isFiltering && (
+                <section className="max-w-7xl mx-auto px-4 pt-6">
+                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-500 text-white">
+                        <div className="absolute -right-24 -top-24 w-96 h-96 rounded-full bg-white/10 blur-2xl" />
+                        <div className="absolute right-40 -bottom-32 w-80 h-80 rounded-full bg-accent-400/20 blur-3xl" />
+                        <div className="relative grid md:grid-cols-2 items-center gap-8 p-8 md:p-14">
+                            <div>
+                                <span className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold">
+                                    <Sparkles size={13} className="text-accent-400" /> Novidades da semana
                                 </span>
+                                <h1 className="mt-4 text-4xl md:text-5xl font-black leading-tight tracking-tight">
+                                    Tecnologia que <span className="text-accent-400">simplifica</span> o seu dia
+                                </h1>
+                                <p className="mt-4 text-brand-100 max-w-md">
+                                    Os melhores gadgets, acessórios e eletrônicos em um só lugar, com entrega rápida e compra segura.
+                                </p>
+                                <a href="#produtos" className="mt-7 inline-flex items-center gap-2 bg-accent-400 text-slate-900 font-bold px-6 py-3 rounded-full hover:bg-accent-500 transition">
+                                    Comprar agora <ArrowRight size={18} />
+                                </a>
+                            </div>
+
+                            {featured && (
+                                <Link to={`/product/${featured.id}`} className="hidden md:block justify-self-end w-full max-w-sm group">
+                                    <div className="bg-white rounded-3xl p-4 shadow-2xl shadow-black/30 rotate-2 group-hover:rotate-0 transition-transform duration-300">
+                                        <img src={featured.imageUrl} alt={featured.name} className="w-full aspect-[4/3] object-cover rounded-2xl" />
+                                        <div className="px-2 pt-3 pb-1 text-slate-900">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-600">Destaque</p>
+                                            <p className="font-bold line-clamp-1">{featured.name}</p>
+                                            <p className="font-black text-lg">{formatBRL(featured.price)}</p>
+                                        </div>
+                                    </div>
+                                </Link>
                             )}
-                        </button>
+                        </div>
                     </div>
-                </header>
+                </section>
+            )}
+
+            {!isFiltering && categories.length > 0 && (
+                <section className="max-w-7xl mx-auto px-4 mt-10">
+                    <h2 className="text-xl font-extrabold text-slate-900 mb-4">Navegue por categoria</h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                        {categories.map((c) => {
+                            const sample = products.find((p) => p.category === c);
+                            return (
+                                <Link key={c} to={`/?category=${encodeURIComponent(c)}#produtos`}
+                                    className="group bg-white border border-slate-200 rounded-2xl p-3 flex items-center gap-3 hover:border-brand-500 hover:shadow-lg hover:shadow-brand-600/10 transition">
+                                    <img src={sample?.imageUrl} alt="" className="w-12 h-12 rounded-xl object-cover bg-slate-100" />
+                                    <span className="text-sm font-semibold text-slate-700 group-hover:text-brand-600 leading-tight">{c}</span>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                </section>
+            )}
+
+            <section id="produtos" className="max-w-7xl mx-auto px-4 mt-10 scroll-mt-32">
+                <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
+                    <div>
+                        <h2 className="text-2xl font-extrabold text-slate-900">
+                            {category ?? (q ? `Resultados para “${params.get('q')}”` : 'Todos os produtos')}
+                        </h2>
+                        <p className="text-sm text-slate-500">{filtered.length} {filtered.length === 1 ? 'produto' : 'produtos'}</p>
+                    </div>
+                    {isFiltering && (
+                        <button onClick={() => setParams({})} className="flex items-center gap-1.5 text-sm font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-full transition">
+                            <X size={14} /> Limpar filtros
+                        </button>
+                    )}
+                </div>
 
                 {loading ? (
-                    <p className="text-center text-gray-500 mt-12">Carregando produtos...</p>
-                ) : products.length === 0 ? (
-                    <div className="text-center bg-white p-12 rounded-lg shadow-sm border border-gray-200">
-                        <p className="text-gray-600 text-lg">Nenhum produto cadastrado no momento.</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {products.map((product) => (
-                            <div key={product.id} className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 flex flex-col">
-                                <img
-                                    src={product.imageUrl}
-                                    alt={product.name}
-                                    className="h-48 w-full object-cover cursor-pointer hover:opacity-90 transition"
-                                    onClick={() => navigate(`/product/${product.id}`)}
-                                />
-                                <div className="p-5 flex flex-col flex-1">
-                                    <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">{product.category}</span>
-                                    <h3
-                                        className="text-xl font-bold text-gray-800 mb-2 cursor-pointer hover:text-blue-600 transition"
-                                        onClick={() => navigate(`/product/${product.id}`)}
-                                    >
-                                        {product.name}
-                                    </h3>
-                                    <p className="text-gray-600 text-sm mb-4 flex-1 line-clamp-2">{product.description}</p>
-                                    <div className="flex justify-between items-center mt-auto pt-4 border-t border-gray-100">
-                                        <div>
-                                            <span className="text-2xl font-black text-gray-900">
-                                                R$ {product.price.toFixed(2)}
-                                            </span>
-                                            <p className="text-xs text-gray-500">Estoque: {product.stock}</p>
-                                        </div>
-                                        <button
-                                            onClick={() => addToCart(product)}
-                                            disabled={product.stock === 0}
-                                            className="px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition disabled:opacity-50"
-                                        >
-                                            {product.stock > 0 ? 'Adicionar' : 'Esgotado'}
-                                        </button>
-                                    </div>
-                                </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <div key={i} className="bg-white rounded-2xl border border-slate-200 p-3 animate-pulse">
+                                <div className="aspect-square bg-slate-100 rounded-xl" />
+                                <div className="h-3 w-1/3 bg-slate-100 rounded mt-4" />
+                                <div className="h-4 w-4/5 bg-slate-100 rounded mt-2" />
+                                <div className="h-9 bg-slate-100 rounded mt-6" />
                             </div>
                         ))}
                     </div>
+                ) : filtered.length === 0 ? (
+                    <div className="text-center bg-white p-14 rounded-2xl border border-dashed border-slate-300">
+                        <p className="text-slate-600 text-lg font-medium">Nenhum produto encontrado.</p>
+                        <p className="text-sm text-slate-400 mt-1">Tente outra busca ou categoria.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {filtered.map((p) => <ProductCard key={p.id} product={p} />)}
+                    </div>
                 )}
-            </div>
+            </section>
+
+            {!isFiltering && newest.length >= 2 && (
+                <section className="max-w-7xl mx-auto px-4 mt-14">
+                    <h2 className="text-xl font-extrabold text-slate-900 mb-4">Chegaram agora</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {newest.map((p, i) => (
+                            <Link key={p.id} to={`/product/${p.id}`}
+                                className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${promoPalette[i % promoPalette.length]} text-white p-5 min-h-52 flex flex-col justify-end group`}>
+                                <img src={p.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay group-hover:scale-105 transition-transform duration-500" />
+                                <div className="relative">
+                                    <span className="text-[11px] font-bold uppercase tracking-wider bg-white/20 backdrop-blur px-2 py-0.5 rounded-md">{p.category}</span>
+                                    <h3 className="mt-2 text-lg font-extrabold leading-tight line-clamp-2">{p.name}</h3>
+                                    <p className="mt-1 text-sm font-semibold flex items-center gap-1">
+                                        A partir de {formatBRL(p.price)} <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                    </p>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </section>
+            )}
         </div>
     );
 }

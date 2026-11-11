@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { PackageOpen } from 'lucide-react';
 import { api } from '../services/api';
+import { formatBRL } from '../components/useUser';
 
 interface OrderItem {
     id: string;
@@ -23,7 +25,6 @@ interface Order {
 export function MyOrders() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
 
     useEffect(() => {
         api.get('/orders')
@@ -33,81 +34,56 @@ export function MyOrders() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-4xl mx-auto">
-                <header className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-3xl font-extrabold text-gray-900">Meus Pedidos 📦</h1>
-                        <p className="text-sm text-gray-500">Acompanhe o histórico das suas compras na DevStore</p>
-                    </div>
-                    <button
-                        onClick={() => navigate('/')}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm font-medium"
-                    >
-                        Voltar para a Loja
-                    </button>
-                </header>
+        <div className="max-w-4xl mx-auto px-4 py-8">
+            <h1 className="text-3xl font-black text-slate-900">Meus pedidos</h1>
+            <p className="text-sm text-slate-500 mb-6">Acompanhe o histórico das suas compras</p>
 
-                {loading ? (
-                    <p className="text-center text-gray-500 mt-12">Carregando histórico...</p>
-                ) : orders.length === 0 ? (
-                    <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-200 text-center">
-                        <p className="text-gray-500 text-lg mb-4">Você ainda não realizou nenhum pedido.</p>
-                        <button
-                            onClick={() => navigate('/')}
-                            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
-                        >
-                            Começar a Comprar
-                        </button>
-                    </div>
-                ) : (
-                    <div className="space-y-6">
-                        {orders.map((order) => (
-                            <div key={order.id} className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
-                                <div className="flex justify-between items-center border-b pb-4 mb-4">
-                                    <div>
-                                        <span className="text-xs font-semibold text-gray-400 uppercase">Pedido ID</span>
-                                        <p className="text-sm font-mono text-gray-700">{order.id}</p>
-                                        <span className="text-xs text-gray-500">
-                                            {new Date(order.createdAt).toLocaleDateString('pt-BR', {
-                                                day: '2-digit',
-                                                month: '2-digit',
-                                                year: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })}
-                                        </span>
-                                    </div>
-                                    <div className="text-right">
-                                        <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">
-                                            {order.status}
-                                        </span>
-                                        <p className="text-lg font-black text-gray-900 mt-1">R$ {order.total.toFixed(2)}</p>
-                                    </div>
+            {loading ? (
+                <div className="space-y-4 animate-pulse">
+                    {[0, 1].map((i) => <div key={i} className="h-40 bg-slate-200 rounded-2xl" />)}
+                </div>
+            ) : orders.length === 0 ? (
+                <div className="bg-white p-14 rounded-3xl border border-dashed border-slate-300 text-center">
+                    <span className="mx-auto w-16 h-16 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mb-4"><PackageOpen size={30} /></span>
+                    <p className="text-slate-700 text-lg font-semibold mb-6">Você ainda não realizou nenhum pedido</p>
+                    <Link to="/" className="inline-block px-6 py-3 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition">Começar a comprar</Link>
+                </div>
+            ) : (
+                <div className="space-y-5">
+                    {orders.map((order) => (
+                        <div key={order.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                            <div className="flex flex-wrap justify-between items-center gap-3 bg-slate-50 px-5 py-4 border-b border-slate-200">
+                                <div>
+                                    <p className="text-[11px] font-semibold text-slate-400 uppercase">Pedido</p>
+                                    <p className="text-sm font-mono text-slate-700">#{order.id.slice(0, 8)}</p>
+                                    <p className="text-xs text-slate-500">
+                                        {new Date(order.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    </p>
                                 </div>
-
-                                <div className="space-y-3">
-                                    <h4 className="text-xs font-semibold text-gray-400 uppercase">Itens do Pedido</h4>
-                                    {order.items.map((item) => (
-                                        <div key={item.id} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
-                                            <div className="flex items-center gap-3">
-                                                <img src={item.product.imageUrl} alt={item.product.name} className="w-12 h-12 object-cover rounded-md" />
-                                                <div>
-                                                    <p className="font-semibold text-gray-800 text-sm">{item.product.name}</p>
-                                                    <p className="text-xs text-gray-500">Qtd: {item.quantity}x</p>
-                                                </div>
-                                            </div>
-                                            <span className="font-bold text-gray-700 text-sm">
-                                                R$ {(item.price * item.quantity).toFixed(2)}
-                                            </span>
-                                        </div>
-                                    ))}
+                                <div className="text-right">
+                                    <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">{order.status}</span>
+                                    <p className="text-lg font-black text-slate-900 mt-1">{formatBRL(order.total)}</p>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+
+                            <div className="p-5 space-y-3">
+                                {order.items.map((item) => (
+                                    <div key={item.id} className="flex justify-between items-center gap-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <img src={item.product.imageUrl} alt={item.product.name} className="w-12 h-12 object-cover rounded-lg bg-slate-100" />
+                                            <div className="min-w-0">
+                                                <p className="font-semibold text-slate-800 text-sm line-clamp-1">{item.product.name}</p>
+                                                <p className="text-xs text-slate-500">Qtd: {item.quantity}</p>
+                                            </div>
+                                        </div>
+                                        <span className="font-bold text-slate-700 text-sm">{formatBRL(item.price * item.quantity)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
