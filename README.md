@@ -108,7 +108,9 @@ The backend ships with two complementary test layers, both built on **Jest**. Al
 
 ### Unit tests
 Exercise a single class in isolation, with collaborators replaced by mocks. They are fast and require no infrastructure.
-- `auth.service.spec.ts` covers `AuthService.login`: successful login (access token returned, password hash never exposed) and `UnauthorizedException` on invalid credentials.
+- `auth.service.spec.ts` covers `AuthService.login` (successful login without exposing the password hash, `UnauthorizedException` on invalid credentials) and `AuthService.getProfile` (current user returned from the database, error propagated when the user no longer exists).
+- `auth.controller.spec.ts` covers `GET /auth/me`, ensuring the profile is resolved from the id inside the validated token.
+- `jwt.strategy.spec.ts` covers `JwtStrategy.validate`.
 
 ### E2E tests (Supertest)
 Boot the full NestJS application and issue real HTTP requests against a real PostgreSQL database, validating routing, validation, guards, JWT authentication and persistence together.
@@ -144,6 +146,22 @@ The seed also creates three sample products (T-shirt, mug and mousepad) so the s
 
 * **Customer (`USER`):** Can browse products, view product details, manage cart items, proceed to checkout, view purchase history under *"My Orders"*, and log in or register.
 * **Administrator (`ADMIN`):** Has full access to the **Admin Panel** (`/admin/products`) to create, update stock, and delete products from the store.
+
+---
+
+## 🛡️ Security Notes
+
+### Authorization is enforced by the backend, never by the UI
+The frontend hides or shows elements (e.g. the **Admin** button) based on the user's role, but that is only a UX convenience. Every protected route is guarded in the API by `JwtAuthGuard` + `RolesGuard`, and `JwtStrategy` reads the user's **current role from the database** on each request, not from the token payload.
+
+The role shown in the UI comes from `GET /auth/me` and is kept in memory only (Zustand). It is not stored in `localStorage`, so editing browser storage cannot unlock admin screens. Even if someone forged the UI state, the API would answer `403 Forbidden`.
+
+### Known limitation: JWT stored in `localStorage`
+The access token is stored in `localStorage` (`@DevStore:token`). This is a **deliberate simplification** for this project, and I am aware of the trade-off:
+
+* `localStorage` is readable by any JavaScript running on the page, so an **XSS** vulnerability could let an attacker steal the token and impersonate the user (anyone holding a valid token is that user until it expires).
+* The recommended approach for production is to issue the JWT in a **`httpOnly` cookie** (not readable by JavaScript), with **`Secure`** and **`SameSite=Lax`** (or `Strict`) to mitigate CSRF. That requires CORS with `credentials: true`, a cookie parser on the backend, and CSRF considerations for state-changing requests.
+* Other mitigations worth adding in a real deployment: short-lived access tokens with refresh-token rotation, HTTPS only, and a strict Content-Security-Policy.
 
 ---
 
