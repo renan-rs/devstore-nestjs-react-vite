@@ -1,6 +1,7 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowRight, Sparkles, X } from "lucide-react";
 import { useCatalogStore } from "../store/useCatalogStore";
+import { useCategoryStore } from "../store/useCategoryStore";
 import { ProductCard } from "../components/ProductCard";
 import { formatBRL } from "../components/useUser";
 
@@ -8,12 +9,15 @@ export function Home() {
     const { products, loading } = useCatalogStore();
     const [params, setParams] = useSearchParams();
     const q = (params.get('q') ?? '').trim().toLowerCase();
-    const category = params.get('category');
+    const category = params.get('category'); // slug da categoria
     const isFiltering = Boolean(q || category);
 
-    const categories = Array.from(new Set(products.map((p) => p.category)));
+    const allCategories = useCategoryStore((s) => s.categories);
+    // Os cards da home usam a imagem de um produto, então só mostram categorias que têm produtos
+    const categories = allCategories.filter((c) => products.some((p) => p.category.slug === c.slug));
+    const categoryName = allCategories.find((c) => c.slug === category)?.name ?? category;
     const filtered = products.filter((p) =>
-        (!category || p.category === category) &&
+        (!category || p.category.slug === category) &&
         (!q || p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))
     );
 
@@ -71,12 +75,12 @@ export function Home() {
                     <h2 className="text-xl font-extrabold text-slate-900 mb-4">Navegue por categoria</h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                         {categories.map((c) => {
-                            const sample = products.find((p) => p.category === c);
+                            const sample = products.find((p) => p.category.slug === c.slug);
                             return (
-                                <Link key={c} to={`/?category=${encodeURIComponent(c)}#produtos`}
+                                <Link key={c.id} to={`/?category=${encodeURIComponent(c.slug)}#produtos`}
                                     className="group bg-white border border-slate-200 rounded-2xl p-3 flex items-center gap-3 hover:border-brand-500 hover:shadow-lg hover:shadow-brand-600/10 transition">
                                     <img src={sample?.imageUrl} alt="" className="w-12 h-12 rounded-xl object-cover bg-slate-100" />
-                                    <span className="text-sm font-semibold text-slate-700 group-hover:text-brand-600 leading-tight">{c}</span>
+                                    <span className="text-sm font-semibold text-slate-700 group-hover:text-brand-600 leading-tight">{c.name}</span>
                                 </Link>
                             );
                         })}
@@ -88,7 +92,7 @@ export function Home() {
                 <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
                     <div>
                         <h2 className="text-2xl font-extrabold text-slate-900">
-                            {category ?? (q ? `Resultados para “${params.get('q')}”` : 'Todos os produtos')}
+                            {categoryName ?? (q ? `Resultados para “${params.get('q')}”` : 'Todos os produtos')}
                         </h2>
                         <p className="text-sm text-slate-500">{filtered.length} {filtered.length === 1 ? 'produto' : 'produtos'}</p>
                     </div>
@@ -131,7 +135,7 @@ export function Home() {
                                 className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${promoPalette[i % promoPalette.length]} text-white p-5 min-h-52 flex flex-col justify-end group`}>
                                 <img src={p.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay group-hover:scale-105 transition-transform duration-500" />
                                 <div className="relative">
-                                    <span className="text-[11px] font-bold uppercase tracking-wider bg-white/20 backdrop-blur px-2 py-0.5 rounded-md">{p.category}</span>
+                                    <span className="text-[11px] font-bold uppercase tracking-wider bg-white/20 backdrop-blur px-2 py-0.5 rounded-md">{p.category.name}</span>
                                     <h3 className="mt-2 text-lg font-extrabold leading-tight line-clamp-2">{p.name}</h3>
                                     <p className="mt-1 text-sm font-semibold flex items-center gap-1">
                                         A partir de {formatBRL(p.price)} <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />

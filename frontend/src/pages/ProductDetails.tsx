@@ -50,7 +50,7 @@ function ProductDetailsContent({ id }: { id?: string }) {
     }
 
     const soldOut = product.stock === 0;
-    const related = catalog.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
+    const related = catalog.filter((p) => p.category.id === product.category.id && p.id !== product.id).slice(0, 4);
 
     function handleAdd() {
         for (let i = 0; i < qty; i++) addToCart(product!);
@@ -63,7 +63,7 @@ function ProductDetailsContent({ id }: { id?: string }) {
             <nav className="flex items-center gap-1.5 text-sm text-slate-500 mb-6 flex-wrap">
                 <Link to="/" className="hover:text-brand-600">Início</Link>
                 <ChevronRight size={14} />
-                <Link to={`/?category=${encodeURIComponent(product.category)}#produtos`} className="hover:text-brand-600">{product.category}</Link>
+                <Link to={`/?category=${encodeURIComponent(product.category.slug)}#produtos`} className="hover:text-brand-600">{product.category.name}</Link>
                 <ChevronRight size={14} />
                 <span className="text-slate-900 font-medium line-clamp-1">{product.name}</span>
             </nav>
@@ -74,7 +74,7 @@ function ProductDetailsContent({ id }: { id?: string }) {
                 </div>
 
                 <div className="flex flex-col">
-                    <span className="self-start text-xs font-bold uppercase tracking-wider text-brand-600 bg-brand-50 px-3 py-1 rounded-full">{product.category}</span>
+                    <span className="self-start text-xs font-bold uppercase tracking-wider text-brand-600 bg-brand-50 px-3 py-1 rounded-full">{product.category.name}</span>
                     <h1 className="mt-3 text-3xl md:text-4xl font-black text-slate-900 leading-tight">{product.name}</h1>
 
                     <p className="mt-5 text-4xl font-black text-slate-900">{formatBRL(product.price)}</p>
