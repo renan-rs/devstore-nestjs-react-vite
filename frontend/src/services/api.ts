@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 
 export const api = axios.create({
     baseURL: 'http://localhost:3000', // URL do backend
@@ -33,3 +33,14 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+
+export function getErrorMessage(err: unknown, fallback: string): string {
+    if (isAxiosError(err)) {
+        const message = err.response?.data?.message;
+        // O NestJS devolve array de strings quando a validação (class-validator) falha
+        if (Array.isArray(message)) return message.join('. ');
+        if (typeof message === 'string') return message;
+    }
+    return fallback;
+}

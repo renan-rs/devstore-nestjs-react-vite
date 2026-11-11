@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../services/api';
+import { Trash2 } from 'lucide-react';
+import { api, getErrorMessage } from '../services/api';
+import { inputClass, labelClass } from '../components/ui';
+import { formatBRL } from '../components/useUser';
+import { useCatalogStore } from '../store/useCatalogStore';
 
 interface Product {
     id: string;
@@ -8,6 +12,7 @@ interface Product {
     price: number;
     stock: number;
     category: string;
+    imageUrl?: string;
 }
 
 export function AdminProducts() {
@@ -39,6 +44,12 @@ export function AdminProducts() {
 
         fetchProducts();
     }, [navigate]);
+
+    // O catálogo compartilhado (nav de categorias, home) é cacheado: força nova busca após mudanças
+    function refreshCatalog() {
+        useCatalogStore.setState({ loaded: false });
+        useCatalogStore.getState().fetchProducts();
+    }
 
     async function fetchProducts() {
         try {
@@ -73,9 +84,10 @@ export function AdminProducts() {
             setImageUrl('');
             setCategory('');
             fetchProducts(); // Atualiza a lista
-        } catch (err: any) {
+            refreshCatalog();
+        } catch (err) {
             console.error(err);
-            setError(err.response?.data?.message || 'Erro ao cadastrar produto. Verifique os dados.');
+            setError(getErrorMessage(err, 'Erro ao cadastrar produto. Verifique os dados.'));
         } finally {
             setLoading(false);
         }
@@ -87,6 +99,7 @@ export function AdminProducts() {
         try {
             await api.delete(`/products/${id}`);
             setProducts(products.filter(p => p.id !== id));
+            refreshCatalog();
         } catch (err) {
             console.error('Erro ao deletar produto:', err);
             alert('Erro ao excluir produto.');
@@ -94,139 +107,78 @@ export function AdminProducts() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-5xl mx-auto">
-                <header className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-3xl font-extrabold text-gray-900">Painel Administrativo 🛠️</h1>
-                        <p className="text-sm text-gray-500">Gerenciamento de produtos da DevStore</p>
-                    </div>
-                    <button
-                        onClick={() => navigate('/')}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
-                    >
-                        Voltar para a Loja
-                    </button>
-                </header>
+        <div className="max-w-6xl mx-auto px-4 py-8">
+            <h1 className="text-3xl font-black text-slate-900">Painel administrativo</h1>
+            <p className="text-sm text-slate-500 mb-6">Gerenciamento de produtos da DevStore</p>
 
-                {/* Formulário de Cadastro */}
-                <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-10">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Cadastrar Novo Produto</h2>
+            <div className="grid lg:grid-cols-5 gap-6 items-start">
+                <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 lg:sticky lg:top-24">
+                    <h2 className="text-lg font-bold text-slate-900 mb-4">Cadastrar novo produto</h2>
 
-                    {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg">{error}</div>}
-                    {success && <div className="mb-4 p-3 bg-emerald-50 text-emerald-600 text-sm rounded-lg">{success}</div>}
+                    {error && <div className="mb-4 p-3 bg-rose-50 text-rose-600 text-sm rounded-xl">{error}</div>}
+                    {success && <div className="mb-4 p-3 bg-emerald-50 text-emerald-600 text-sm rounded-xl">{success}</div>}
 
-                    <form onSubmit={handleCreateProduct} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <form onSubmit={handleCreateProduct} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Produto</label>
-                            <input
-                                type="text"
-                                required
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                            />
+                            <label className={labelClass}>Nome do produto</label>
+                            <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
                         </div>
-
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                            <input
-                                type="text"
-                                required
-                                value={category}
-                                onChange={(e) => setCategory(e.target.value)}
-                                placeholder="Ex: Eletrônicos, Livros..."
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                            />
+                            <label className={labelClass}>Categoria</label>
+                            <input type="text" required value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Ex: Eletrônicos, Livros..." className={inputClass} />
                         </div>
-
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className={labelClass}>Preço (R$)</label>
+                                <input type="number" step="0.01" required value={price} onChange={(e) => setPrice(e.target.value)} className={inputClass} />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Estoque</label>
+                                <input type="number" required value={stock} onChange={(e) => setStock(e.target.value)} className={inputClass} />
+                            </div>
+                        </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Preço (R$)</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                required
-                                value={price}
-                                onChange={(e) => setPrice(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                            />
+                            <label className={labelClass}>URL da imagem</label>
+                            <input type="url" required value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://exemplo.com/imagem.jpg" className={inputClass} />
                         </div>
-
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Estoque</label>
-                            <input
-                                type="number"
-                                required
-                                value={stock}
-                                onChange={(e) => setStock(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                            />
+                            <label className={labelClass}>Descrição</label>
+                            <textarea required rows={3} value={description} onChange={(e) => setDescription(e.target.value)}
+                                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-200 focus:border-brand-500 outline-none" />
                         </div>
-
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">URL da Imagem</label>
-                            <input
-                                type="url"
-                                required
-                                value={imageUrl}
-                                onChange={(e) => setImageUrl(e.target.value)}
-                                placeholder="https://exemplo.com/imagem.jpg"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                            />
-                        </div>
-
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-                            <textarea
-                                required
-                                rows={3}
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                            />
-                        </div>
-
-                        <div className="md:col-span-2">
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-                            >
-                                {loading ? 'Cadastrando...' : 'Salvar Produto'}
-                            </button>
-                        </div>
+                        <button type="submit" disabled={loading} className="w-full h-12 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition disabled:opacity-50">
+                            {loading ? 'Cadastrando...' : 'Salvar produto'}
+                        </button>
                     </form>
                 </div>
 
-                {/* Tabela de Produtos Existentes */}
-                <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-                    <div className="p-6 border-b border-gray-200">
-                        <h2 className="text-xl font-bold text-gray-800">Produtos Cadastrados ({products.length})</h2>
+                <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-200">
+                        <h2 className="text-lg font-bold text-slate-900">Produtos cadastrados <span className="text-slate-400 font-medium">({products.length})</span></h2>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                        <table className="w-full text-left">
                             <thead>
-                                <tr className="bg-gray-100 text-gray-600 text-sm uppercase">
-                                    <th className="p-4">Nome</th>
-                                    <th className="p-4">Categoria</th>
-                                    <th className="p-4">Preço</th>
-                                    <th className="p-4">Estoque</th>
-                                    <th className="p-4 text-right">Ações</th>
+                                <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                    <th className="px-6 py-3">Nome</th>
+                                    <th className="px-4 py-3">Categoria</th>
+                                    <th className="px-4 py-3">Preço</th>
+                                    <th className="px-4 py-3">Estoque</th>
+                                    <th className="px-6 py-3 text-right">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200 text-sm text-gray-700">
+                            <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                                 {products.map((p) => (
-                                    <tr key={p.id} className="hover:bg-gray-50">
-                                        <td className="p-4 font-medium text-gray-900">{p.name}</td>
-                                        <td className="p-4">{p.category}</td>
-                                        <td className="p-4">R$ {p.price.toFixed(2)}</td>
-                                        <td className="p-4">{p.stock} un.</td>
-                                        <td className="p-4 text-right">
-                                            <button
-                                                onClick={() => handleDelete(p.id)}
-                                                className="px-3 py-1 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition"
-                                            >
-                                                Excluir
+                                    <tr key={p.id} className="hover:bg-slate-50">
+                                        <td className="px-6 py-3 font-semibold text-slate-900">{p.name}</td>
+                                        <td className="px-4 py-3"><span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2 py-1 rounded-md">{p.category}</span></td>
+                                        <td className="px-4 py-3">{formatBRL(p.price)}</td>
+                                        <td className="px-4 py-3">
+                                            <span className={p.stock === 0 ? 'text-rose-600 font-semibold' : ''}>{p.stock} un.</span>
+                                        </td>
+                                        <td className="px-6 py-3 text-right">
+                                            <button onClick={() => handleDelete(p.id)} aria-label="Excluir" className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition">
+                                                <Trash2 size={16} />
                                             </button>
                                         </td>
                                     </tr>
