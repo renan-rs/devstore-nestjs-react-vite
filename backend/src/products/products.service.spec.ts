@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -8,7 +8,7 @@ describe('ProductsService', () => {
 
   const mockPrisma = {
     category: { findUnique: jest.fn() },
-    product: { create: jest.fn() },
+    product: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
   };
 
   const dto = {
@@ -52,6 +52,48 @@ describe('ProductsService', () => {
 
       await expect(service.create(dto)).rejects.toThrow(BadRequestException);
       expect(mockPrisma.product.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('update', () => {
+    it('should update only the provided fields and include the category', async () => {
+      mockPrisma.product.findUnique.mockResolvedValue({ id: 'p1', ...dto });
+      mockPrisma.product.update.mockResolvedValue({ id: 'p1', ...dto, price: 79.9 });
+
+      await service.update('p1', { price: 79.9 });
+
+      expect(mockPrisma.category.findUnique).not.toHaveBeenCalled();
+      expect(mockPrisma.product.update).toHaveBeenCalledWith({
+        where: { id: 'p1' },
+        data: { price: 79.9 },
+        include: { category: true },
+      });
+    });
+
+    it('should validate the new category when categoryId is provided', async () => {
+      mockPrisma.product.findUnique.mockResolvedValue({ id: 'p1', ...dto });
+      mockPrisma.category.findUnique.mockResolvedValue({ id: 'cat-2', name: 'Livros', slug: 'livros' });
+      mockPrisma.product.update.mockResolvedValue({ id: 'p1', ...dto, categoryId: 'cat-2' });
+
+      await service.update('p1', { categoryId: 'cat-2' });
+
+      expect(mockPrisma.category.findUnique).toHaveBeenCalledWith({ where: { id: 'cat-2' } });
+      expect(mockPrisma.product.update).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException when the product does not exist', async () => {
+      mockPrisma.product.findUnique.mockResolvedValue(null);
+
+      await expect(service.update('missing', { name: 'Novo nome' })).rejects.toThrow(NotFoundException);
+      expect(mockPrisma.product.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when the new category does not exist', async () => {
+      mockPrisma.product.findUnique.mockResolvedValue({ id: 'p1', ...dto });
+      mockPrisma.category.findUnique.mockResolvedValue(null);
+
+      await expect(service.update('p1', { categoryId: 'cat-x' })).rejects.toThrow(BadRequestException);
+      expect(mockPrisma.product.update).not.toHaveBeenCalled();
     });
   });
 });
