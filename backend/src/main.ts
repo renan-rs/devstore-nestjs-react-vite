@@ -1,12 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { configureApp } from './app.setup';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors(); // Permite requisições do frontend
-  app.useGlobalPipes(new ValidationPipe({whitelist: true}));
+  configureApp(app); // ValidationPipe global
 
   await app.listen(process.env.PORT ?? 3000);
 }

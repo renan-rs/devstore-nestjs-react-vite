@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import * as bcrypt from 'bcrypt';
 import { AppModule } from './../src/app.module';
+import { configureApp } from '../src/app.setup';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 describe('Categories (e2e)', () => {
@@ -28,6 +29,7 @@ describe('Categories (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    configureApp(app);
     prisma = app.get(PrismaService);
     await app.init();
 
@@ -60,6 +62,14 @@ describe('Categories (e2e)', () => {
       .set('Authorization', `Bearer ${userToken}`)
       .send({ name: categoryName })
       .expect(403);
+  });
+
+  it('/categories (POST) - should return 400 when the name is empty', () => {
+    return request(app.getHttpServer())
+      .post('/categories')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: '' })
+      .expect(400);
   });
 
   it('/categories (POST) - should create a category as ADMIN and reject duplicates with 409', async () => {

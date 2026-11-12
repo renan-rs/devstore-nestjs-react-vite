@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import * as bcrypt from 'bcrypt';
 import { AppModule } from './../src/app.module';
+import { configureApp } from '../src/app.setup';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 describe('Products update (e2e)', () => {
@@ -36,6 +37,7 @@ describe('Products update (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    configureApp(app);
     prisma = app.get(PrismaService);
     await app.init();
 
@@ -91,6 +93,22 @@ describe('Products update (e2e)', () => {
       .patch(`/products/${productId}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ categoryId: '00000000-0000-4000-8000-000000000000' })
+      .expect(400);
+  });
+
+  it('/products/:id (PATCH) - should return 400 for a non-integer stock', () => {
+    return request(app.getHttpServer())
+      .patch(`/products/${productId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ stock: 2.5 })
+      .expect(400);
+  });
+
+  it('/products/:id (PATCH) - should return 400 for a negative price', () => {
+    return request(app.getHttpServer())
+      .patch(`/products/${productId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ price: -10 })
       .expect(400);
   });
 

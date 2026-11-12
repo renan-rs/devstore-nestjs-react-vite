@@ -110,13 +110,13 @@ The backend ships with two complementary test layers, both built on **Jest**. Al
 Exercise a single class in isolation, with collaborators replaced by mocks. They are fast and require no infrastructure.
 - `categories.service.spec.ts` covers `CategoriesService`: slug generation (accents, separators, invalid names), duplicate detection (`409`), and deletion rules (`404`, `409` when the category still has products).
 - `products.service.spec.ts` covers `ProductsService.create` (rejects a non-existent category with `400`) and `ProductsService.update` (partial update, `404` for a missing product, `400` for a non-existent category).
-- `update-product.dto.spec.ts` covers the validation rules of `UpdateProductDto` (all fields optional, integer stock, non-negative price, valid category id) with `class-validator`, since the e2e app does not mount the global `ValidationPipe`.
+- `update-product.dto.spec.ts` covers the validation rules of `UpdateProductDto` (all fields optional, integer stock, non-negative price, valid category id) with `class-validator`.
 - `auth.service.spec.ts` covers `AuthService.login` (successful login without exposing the password hash, `UnauthorizedException` on invalid credentials) and `AuthService.getProfile` (current user returned from the database, error propagated when the user no longer exists).
 - `auth.controller.spec.ts` covers `GET /auth/me`, ensuring the profile is resolved from the id inside the validated token.
 - `jwt.strategy.spec.ts` covers `JwtStrategy.validate`.
 
 ### E2E tests (Supertest)
-Boot the full NestJS application and issue real HTTP requests against a real PostgreSQL database, validating routing, validation, guards, JWT authentication and persistence together.
+Boot the full NestJS application (with the same global `ValidationPipe` used in production, via `configureApp` in `src/app.setup.ts`) and issue real HTTP requests against a real PostgreSQL database, validating routing, validation, guards, JWT authentication and persistence together.
 - `app.e2e-spec.ts`: public product listing (`GET /products`).
 - `categories.e2e-spec.ts`: category management. Public listing, `401` without a token, `403` for a regular `USER`, `201` for an `ADMIN`, `409` on duplicates, and `409` when deleting a category that still has products.
 - `products.e2e-spec.ts`: product update (`PATCH /products/:id`). `401` without a token, `403` for a regular `USER`, `404` for an unknown product, `400` for a non-existent category, and `200` for an `ADMIN` updating only the provided fields.
