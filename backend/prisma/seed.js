@@ -72,7 +72,7 @@ const products = [
         name: 'Webcam Full HD 1080p',
         description: 'Webcam com microfone embutido e foco automático para reuniões e streams.',
         price: 219.90, stock: 14, category: 'Periféricos',
-        imageUrl: img('1587826080692-f439cd0b70da'),
+        imageUrl: img('1629429407756-446d66f5b24e'),
     },
     // Acessórios
     {
@@ -91,7 +91,7 @@ const products = [
         name: 'Hub USB-C 7 em 1',
         description: 'Hub com HDMI, leitor de cartão, portas USB 3.0 e entrada de energia.',
         price: 159.90, stock: 16, category: 'Acessórios',
-        imageUrl: img('1625948515291-69613efd103f'),
+        imageUrl: img('1760376789487-994070337c76'),
     },
     {
         name: 'Kit de Adesivos Dev',
@@ -191,9 +191,9 @@ async function main() {
         const exists = await prisma.product.findFirst({ where: { name: product.name } });
         if (!exists) {
             await prisma.product.create({ data: { ...product, categoryId } });
-        } else if (exists.categoryId !== categoryId) {
-            // Produtos de seeds anteriores são movidos para a categoria definida aqui
-            await prisma.product.update({ where: { id: exists.id }, data: { categoryId } });
+        } else if (exists.categoryId !== categoryId || exists.imageUrl !== product.imageUrl) {
+            // Produtos de seeds anteriores são sincronizados com a categoria e a imagem definidas aqui
+            await prisma.product.update({ where: { id: exists.id }, data: { categoryId, imageUrl: product.imageUrl } });
         }
     }
 
