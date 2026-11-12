@@ -53,6 +53,7 @@ docker compose up --build
 Access the services at:
 * **Frontend:** `http://localhost:5173`
 * **Backend API:** `http://localhost:3000`
+* **API docs (Swagger UI):** `http://localhost:3000/docs`
 * **PostgreSQL Database:** `localhost:5432`
 
 ---

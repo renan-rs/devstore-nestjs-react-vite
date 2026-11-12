@@ -11,6 +11,15 @@ This is the backend service for **DevStore**, built with **NestJS**, **Prisma OR
 * **Products Module (`/products`):** CRUD operations for products, protected by `RolesGuard` (Admin-only creation and deletion).
 * **Orders Module (`/orders`):** Order creation, line item management, total calculation, and order history fetching.
 
+## 📖 API Documentation (Swagger)
+
+Interactive OpenAPI docs are served by the running backend:
+
+* **Swagger UI:** `http://localhost:3000/docs`
+* **OpenAPI JSON:** `http://localhost:3000/docs-json`
+
+For protected routes, call `POST /auth/login`, click **Authorize** and paste the `access_token`. DTOs use explicit `@ApiProperty` decorators (the Nest CLI Swagger plugin is not used), so new DTO fields must be decorated to show up in the docs.
+
 ---
 
 ## 🛠️ Environment Variables
