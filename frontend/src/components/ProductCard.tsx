@@ -28,7 +28,7 @@ export function ProductCard({ product }: { product: Product }) {
             </Link>
 
             <div className="pt-3 px-1 flex flex-col flex-1">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-brand-600">{product.category}</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-brand-600">{product.category.name}</span>
                 <Link to={`/product/${product.id}`} className="mt-1 font-semibold text-slate-800 leading-snug line-clamp-2 hover:text-brand-600 transition">
                     {product.name}
                 </Link>

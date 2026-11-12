@@ -6,13 +6,14 @@ import { inputClass, labelClass } from '../components/ui';
 import { formatBRL } from '../components/useUser';
 import { useCatalogStore } from '../store/useCatalogStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { useCategoryStore } from '../store/useCategoryStore';
 
 interface Product {
     id: string;
     name: string;
     price: number;
     stock: number;
-    category: string;
+    category: { id: string; name: string; slug: string };
     imageUrl?: string;
 }
 
@@ -23,7 +24,10 @@ export function AdminProducts() {
     const [price, setPrice] = useState('');
     const [stock, setStock] = useState('');
     const [imageUrl, setImageUrl] = useState('');
-    const [category, setCategory] = useState('');
+    const [categoryId, setCategoryId] = useState('');
+    const [newCategory, setNewCategory] = useState('');
+    const [categoryError, setCategoryError] = useState('');
+    const [categoryLoading, setCategoryLoading] = useState(false);
 
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -32,9 +36,15 @@ export function AdminProducts() {
     const user = useAuthStore((s) => s.user);
     const authStatus = useAuthStore((s) => s.status);
     const fetchUser = useAuthStore((s) => s.fetchUser);
+    const categories = useCategoryStore((s) => s.categories);
+    const fetchCategories = useCategoryStore((s) => s.fetchCategories);
+    const refreshCategories = useCategoryStore((s) => s.refreshCategories);
+    const createCategory = useCategoryStore((s) => s.createCategory);
+    const removeCategory = useCategoryStore((s) => s.removeCategory);
 
     // O role vem do backend (/auth/me), nunca do localStorage
     useEffect(() => { fetchUser(); }, [fetchUser]);
+    useEffect(() => { fetchCategories(); }, [fetchCategories]);
 
     useEffect(() => {
         if (authStatus !== 'done') return;
@@ -52,6 +62,32 @@ export function AdminProducts() {
     function refreshCatalog() {
         useCatalogStore.setState({ loaded: false });
         useCatalogStore.getState().fetchProducts();
+    }
+
+    async function handleCreateCategory(e: React.SyntheticEvent) {
+        e.preventDefault();
+        setCategoryError('');
+        setCategoryLoading(true);
+        try {
+            await createCategory(newCategory);
+            setNewCategory('');
+        } catch (err) {
+            setCategoryError(getErrorMessage(err, 'Erro ao criar categoria.'));
+        } finally {
+            setCategoryLoading(false);
+        }
+    }
+
+    async function handleDeleteCategory(id: string, name: string) {
+        if (!confirm(`Excluir a categoria "${name}"?`)) return;
+        setCategoryError('');
+        try {
+            await removeCategory(id);
+            if (categoryId === id) setCategoryId('');
+        } catch (err) {
+            // 409: categoria ainda possui produtos
+            setCategoryError(getErrorMessage(err, 'Erro ao excluir categoria.'));
+        }
     }
 
     async function fetchProducts() {
@@ -76,7 +112,7 @@ export function AdminProducts() {
                 price: Number(price),
                 stock: Number(stock),
                 imageUrl,
-                category,
+                categoryId,
             });
 
             setSuccess('Produto cadastrado com sucesso!');
@@ -85,9 +121,10 @@ export function AdminProducts() {
             setPrice('');
             setStock('');
             setImageUrl('');
-            setCategory('');
+            setCategoryId('');
             fetchProducts(); // Atualiza a lista
             refreshCatalog();
+            refreshCategories(); // Atualiza a contagem de produtos por categoria
         } catch (err) {
             console.error(err);
             setError(getErrorMessage(err, 'Erro ao cadastrar produto. Verifique os dados.'));
@@ -103,6 +140,7 @@ export function AdminProducts() {
             await api.delete(`/products/${id}`);
             setProducts(products.filter(p => p.id !== id));
             refreshCatalog();
+            refreshCategories();
         } catch (err) {
             console.error('Erro ao deletar produto:', err);
             alert('Erro ao excluir produto.');
@@ -130,7 +168,12 @@ export function AdminProducts() {
                         </div>
                         <div>
                             <label className={labelClass}>Categoria</label>
-                            <input type="text" required value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Ex: Eletrônicos, Livros..." className={inputClass} />
+                            <select required value={categoryId} onChange={(e) => setCategoryId(e.target.value)} disabled={categories.length === 0} className={inputClass}>
+                                <option value="">{categories.length === 0 ? 'Crie uma categoria primeiro' : 'Selecione uma categoria'}</option>
+                                {categories.map((c) => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div>
@@ -157,7 +200,37 @@ export function AdminProducts() {
                     </form>
                 </div>
 
-                <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                <div className="lg:col-span-3 space-y-6">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200">
+                    <h2 className="text-lg font-bold text-slate-900 mb-4">Categorias <span className="text-slate-400 font-medium">({categories.length})</span></h2>
+
+                    {categoryError && <div className="mb-4 p-3 bg-rose-50 text-rose-600 text-sm rounded-xl">{categoryError}</div>}
+
+                    <form onSubmit={handleCreateCategory} className="flex gap-2 mb-4">
+                        <input type="text" required maxLength={50} value={newCategory} onChange={(e) => setNewCategory(e.target.value)} placeholder="Nova categoria (ex: Periféricos)" className={inputClass} />
+                        <button type="submit" disabled={categoryLoading} className="px-5 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition disabled:opacity-50 whitespace-nowrap">
+                            {categoryLoading ? 'Criando...' : 'Adicionar'}
+                        </button>
+                    </form>
+
+                    {categories.length === 0 ? (
+                        <p className="text-sm text-slate-500">Nenhuma categoria cadastrada.</p>
+                    ) : (
+                        <ul className="flex flex-wrap gap-2">
+                            {categories.map((c) => (
+                                <li key={c.id} className="flex items-center gap-1 pl-3 pr-1 py-1 bg-brand-50 text-brand-700 text-sm font-semibold rounded-full">
+                                    {c.name}
+                                    <span className="text-xs font-medium text-brand-700/60">({c._count?.products ?? 0})</span>
+                                    <button onClick={() => handleDeleteCategory(c.id, c.name)} aria-label={`Excluir categoria ${c.name}`} className="p-1 text-rose-500 hover:bg-rose-100 rounded-full transition">
+                                        <Trash2 size={14} />
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
                     <div className="px-6 py-4 border-b border-slate-200">
                         <h2 className="text-lg font-bold text-slate-900">Produtos cadastrados <span className="text-slate-400 font-medium">({products.length})</span></h2>
                     </div>
@@ -176,7 +249,7 @@ export function AdminProducts() {
                                 {products.map((p) => (
                                     <tr key={p.id} className="hover:bg-slate-50">
                                         <td className="px-6 py-3 font-semibold text-slate-900">{p.name}</td>
-                                        <td className="px-4 py-3"><span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2 py-1 rounded-md">{p.category}</span></td>
+                                        <td className="px-4 py-3"><span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2 py-1 rounded-md">{p.category.name}</span></td>
                                         <td className="px-4 py-3">{formatBRL(p.price)}</td>
                                         <td className="px-4 py-3">
                                             <span className={p.stock === 0 ? 'text-rose-600 font-semibold' : ''}>{p.stock} un.</span>
@@ -191,6 +264,7 @@ export function AdminProducts() {
                             </tbody>
                         </table>
                     </div>
+                </div>
                 </div>
             </div>
         </div>

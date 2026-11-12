@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useCartStore, selectTotalItems } from '../store/useCartStore';
 import { useCatalogStore } from '../store/useCatalogStore';
+import { useCategoryStore } from '../store/useCategoryStore';
 import { logout } from './useUser';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -128,11 +129,10 @@ function Header() {
 }
 
 function CategoryNav() {
-    const products = useCatalogStore((s) => s.products);
+    const categories = useCategoryStore((s) => s.categories);
     const [params] = useSearchParams();
     const { pathname } = useLocation();
     const active = pathname === '/' ? params.get('category') : null;
-    const categories = Array.from(new Set(products.map((p) => p.category)));
 
     return (
         <nav className="bg-white border-b border-slate-200 hidden md:block">
@@ -142,9 +142,9 @@ function CategoryNav() {
                     Todos
                 </NavLink>
                 {categories.map((c) => (
-                    <Link key={c} to={`/?category=${encodeURIComponent(c)}#produtos`}
-                        className={`px-3 py-1.5 rounded-full font-medium whitespace-nowrap transition ${active === c ? 'bg-brand-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
-                        {c}
+                    <Link key={c.id} to={`/?category=${encodeURIComponent(c.slug)}#produtos`}
+                        className={`px-3 py-1.5 rounded-full font-medium whitespace-nowrap transition ${active === c.slug ? 'bg-brand-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
+                        {c.name}
                     </Link>
                 ))}
             </div>
@@ -208,9 +208,11 @@ function Footer() {
 
 export function Layout() {
     const fetchProducts = useCatalogStore((s) => s.fetchProducts);
+    const fetchCategories = useCategoryStore((s) => s.fetchCategories);
     const { pathname, hash } = useLocation();
 
     useEffect(() => { fetchProducts(); }, [fetchProducts]);
+    useEffect(() => { fetchCategories(); }, [fetchCategories]);
 
     useEffect(() => {
         if (hash) {

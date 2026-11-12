@@ -32,6 +32,17 @@ model User {
   @@map("users")
 }
 
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  products Product[]
+
+  @@map("categories")
+}
+
 model Product {
   id          String   @id @default(uuid())
   name        String
@@ -39,10 +50,11 @@ model Product {
   price       Float
   stock       Int      @default(0)
   imageUrl    String
-  category    String
+  categoryId  String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   orderItems OrderItem[]
 
   @@map("products")
