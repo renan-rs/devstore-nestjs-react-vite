@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Pencil, Trash2 } from 'lucide-react';
 import { api, getErrorMessage } from '../services/api';
-import { inputClass, labelClass } from '../components/ui';
+import { inputClass } from '../components/ui';
 import { formatBRL } from '../components/useUser';
+import { ProductForm, type ProductPayload } from '../components/ProductForm';
+import { useRequireAdmin } from '../hooks/useRequireAdmin';
 import { useCatalogStore } from '../store/useCatalogStore';
-import { useAuthStore } from '../store/useAuthStore';
 import { useCategoryStore } from '../store/useCategoryStore';
 
 interface Product {
@@ -19,50 +20,35 @@ interface Product {
 
 export function AdminProducts() {
     const [products, setProducts] = useState<Product[]>([]);
-    const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
-    const [price, setPrice] = useState('');
-    const [stock, setStock] = useState('');
-    const [imageUrl, setImageUrl] = useState('');
-    const [categoryId, setCategoryId] = useState('');
+    const [formKey, setFormKey] = useState(0); // trocar a key reinicia os campos do formulário
     const [newCategory, setNewCategory] = useState('');
     const [categoryError, setCategoryError] = useState('');
     const [categoryLoading, setCategoryLoading] = useState(false);
 
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
-    const [loading, setLoading] = useState(false);
+    const location = useLocation();
     const navigate = useNavigate();
-    const user = useAuthStore((s) => s.user);
-    const authStatus = useAuthStore((s) => s.status);
-    const fetchUser = useAuthStore((s) => s.fetchUser);
+    // Mensagem vinda da tela de edição (navigate com state); fica só nesta visita
+    const [success, setSuccess] = useState<string>(location.state?.success ?? '');
+    const [loading, setLoading] = useState(false);
+    const isAdmin = useRequireAdmin();
+    const refreshProducts = useCatalogStore((s) => s.refreshProducts);
     const categories = useCategoryStore((s) => s.categories);
     const fetchCategories = useCategoryStore((s) => s.fetchCategories);
     const refreshCategories = useCategoryStore((s) => s.refreshCategories);
     const createCategory = useCategoryStore((s) => s.createCategory);
     const removeCategory = useCategoryStore((s) => s.removeCategory);
 
-    // O role vem do backend (/auth/me), nunca do localStorage
-    useEffect(() => { fetchUser(); }, [fetchUser]);
     useEffect(() => { fetchCategories(); }, [fetchCategories]);
 
     useEffect(() => {
-        if (authStatus !== 'done') return;
-        if (!user) {
-            navigate('/login');
-        } else if (user.role !== 'ADMIN') {
-            alert('Acesso negado! Apenas administradores podem acessar esta página.');
-            navigate('/');
-        } else {
-            fetchProducts();
-        }
-    }, [authStatus, user, navigate]);
+        if (isAdmin) fetchProducts();
+    }, [isAdmin]);
 
-    // O catálogo compartilhado (nav de categorias, home) é cacheado: força nova busca após mudanças
-    function refreshCatalog() {
-        useCatalogStore.setState({ loaded: false });
-        useCatalogStore.getState().fetchProducts();
-    }
+    // Limpa o state da navegação para a mensagem não reaparecer ao recarregar a página
+    useEffect(() => {
+        if (location.state?.success) navigate(location.pathname, { replace: true, state: null });
+    }, [location, navigate]);
 
     async function handleCreateCategory(e: React.SyntheticEvent) {
         e.preventDefault();
@@ -83,7 +69,6 @@ export function AdminProducts() {
         setCategoryError('');
         try {
             await removeCategory(id);
-            if (categoryId === id) setCategoryId('');
         } catch (err) {
             // 409: categoria ainda possui produtos
             setCategoryError(getErrorMessage(err, 'Erro ao excluir categoria.'));
@@ -99,31 +84,18 @@ export function AdminProducts() {
         }
     }
 
-    async function handleCreateProduct(e: React.SyntheticEvent) {
-        e.preventDefault();
+    async function handleCreateProduct(payload: ProductPayload) {
         setError('');
         setSuccess('');
         setLoading(true);
 
         try {
-            await api.post('/products', {
-                name,
-                description,
-                price: Number(price),
-                stock: Number(stock),
-                imageUrl,
-                categoryId,
-            });
+            await api.post('/products', payload);
 
             setSuccess('Produto cadastrado com sucesso!');
-            setName('');
-            setDescription('');
-            setPrice('');
-            setStock('');
-            setImageUrl('');
-            setCategoryId('');
+            setFormKey((k) => k + 1); // limpa o formulário
             fetchProducts(); // Atualiza a lista
-            refreshCatalog();
+            refreshProducts();
             refreshCategories(); // Atualiza a contagem de produtos por categoria
         } catch (err) {
             console.error(err);
@@ -139,7 +111,7 @@ export function AdminProducts() {
         try {
             await api.delete(`/products/${id}`);
             setProducts(products.filter(p => p.id !== id));
-            refreshCatalog();
+            refreshProducts();
             refreshCategories();
         } catch (err) {
             console.error('Erro ao deletar produto:', err);
@@ -147,7 +119,7 @@ export function AdminProducts() {
         }
     }
 
-    if (user?.role !== 'ADMIN') return null;
+    if (!isAdmin) return null;
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-8">
@@ -158,46 +130,16 @@ export function AdminProducts() {
                 <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 lg:sticky lg:top-24">
                     <h2 className="text-lg font-bold text-slate-900 mb-4">Cadastrar novo produto</h2>
 
-                    {error && <div className="mb-4 p-3 bg-rose-50 text-rose-600 text-sm rounded-xl">{error}</div>}
                     {success && <div className="mb-4 p-3 bg-emerald-50 text-emerald-600 text-sm rounded-xl">{success}</div>}
 
-                    <form onSubmit={handleCreateProduct} className="space-y-4">
-                        <div>
-                            <label className={labelClass}>Nome do produto</label>
-                            <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
-                        </div>
-                        <div>
-                            <label className={labelClass}>Categoria</label>
-                            <select required value={categoryId} onChange={(e) => setCategoryId(e.target.value)} disabled={categories.length === 0} className={inputClass}>
-                                <option value="">{categories.length === 0 ? 'Crie uma categoria primeiro' : 'Selecione uma categoria'}</option>
-                                {categories.map((c) => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className={labelClass}>Preço (R$)</label>
-                                <input type="number" step="0.01" required value={price} onChange={(e) => setPrice(e.target.value)} className={inputClass} />
-                            </div>
-                            <div>
-                                <label className={labelClass}>Estoque</label>
-                                <input type="number" required value={stock} onChange={(e) => setStock(e.target.value)} className={inputClass} />
-                            </div>
-                        </div>
-                        <div>
-                            <label className={labelClass}>URL da imagem</label>
-                            <input type="url" required value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://exemplo.com/imagem.jpg" className={inputClass} />
-                        </div>
-                        <div>
-                            <label className={labelClass}>Descrição</label>
-                            <textarea required rows={3} value={description} onChange={(e) => setDescription(e.target.value)}
-                                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-200 focus:border-brand-500 outline-none" />
-                        </div>
-                        <button type="submit" disabled={loading} className="w-full h-12 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition disabled:opacity-50">
-                            {loading ? 'Cadastrando...' : 'Salvar produto'}
-                        </button>
-                    </form>
+                    <ProductForm
+                        key={formKey}
+                        submitLabel="Salvar produto"
+                        loadingLabel="Cadastrando..."
+                        loading={loading}
+                        error={error}
+                        onSubmit={handleCreateProduct}
+                    />
                 </div>
 
                 <div className="lg:col-span-3 space-y-6">
@@ -255,9 +197,14 @@ export function AdminProducts() {
                                             <span className={p.stock === 0 ? 'text-rose-600 font-semibold' : ''}>{p.stock} un.</span>
                                         </td>
                                         <td className="px-6 py-3 text-right">
-                                            <button onClick={() => handleDelete(p.id)} aria-label="Excluir" className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition">
-                                                <Trash2 size={16} />
-                                            </button>
+                                            <div className="flex justify-end gap-1">
+                                                <Link to={`/admin/products/${p.id}/edit`} aria-label={`Editar ${p.name}`} className="p-2 text-slate-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition">
+                                                    <Pencil size={16} />
+                                                </Link>
+                                                <button onClick={() => handleDelete(p.id)} aria-label={`Excluir ${p.name}`} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

@@ -7,6 +7,7 @@ interface CatalogState {
     loading: boolean;
     loaded: boolean;
     fetchProducts: () => Promise<void>;
+    refreshProducts: () => Promise<void>;
 }
 
 export const useCatalogStore = create<CatalogState>((set, get) => ({
@@ -24,5 +25,10 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
         } finally {
             set({ loading: false });
         }
+    },
+    // Força nova busca (após cadastrar, editar ou excluir produto)
+    refreshProducts: async () => {
+        set({ loaded: false });
+        await get().fetchProducts();
     },
 }));

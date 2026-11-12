@@ -4,6 +4,7 @@ import { Home } from "./pages/Home";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { AdminProducts } from "./pages/AdminProducts";
+import { AdminProductEdit } from "./pages/AdminProductEdit";
 import { Cart } from "./pages/Cart";
 import { ProductDetails } from "./pages/ProductDetails";
 import { MyOrders } from "./pages/MyOrders";
@@ -20,6 +21,7 @@ function App() {
             <Route path="/orders" element={<MyOrders />}/>
             <Route path="/checkout" element={<Checkout />}/>
             <Route path="/admin/products" element={<AdminProducts />} />
+            <Route path="/admin/products/:id/edit" element={<AdminProductEdit />} />
           </Route>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
