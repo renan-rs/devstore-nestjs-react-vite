@@ -20,7 +20,7 @@ export class OrdersController {
         return this.ordersService.findAllByUser(userId);
     }
 
-    @Get('id')
+    @Get(':id')
     findOne(@Req() req: any, @Param('id') id: string){
         const { userId, role } = req.user;
         return this.ordersService.findOne(id, userId, role);

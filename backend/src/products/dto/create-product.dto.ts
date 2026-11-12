@@ -6,7 +6,7 @@ export class CreateProductDto {
     name: string;
 
     @IsString()
-    @IsNotEmpty({message: 'A cescrição é obrigatória'})
+    @IsNotEmpty({message: 'A descrição é obrigatória'})
     description: string;
 
     @IsNumber({}, {message: 'O preço deve ser um número'})
