@@ -109,15 +109,17 @@ The backend ships with two complementary test layers, both built on **Jest**. Al
 ### Unit tests
 Exercise a single class in isolation, with collaborators replaced by mocks. They are fast and require no infrastructure.
 - `categories.service.spec.ts` covers `CategoriesService`: slug generation (accents, separators, invalid names), duplicate detection (`409`), and deletion rules (`404`, `409` when the category still has products).
-- `products.service.spec.ts` covers `ProductsService.create`, which rejects a non-existent category with `400`.
+- `products.service.spec.ts` covers `ProductsService.create` (rejects a non-existent category with `400`) and `ProductsService.update` (partial update, `404` for a missing product, `400` for a non-existent category).
+- `update-product.dto.spec.ts` covers the validation rules of `UpdateProductDto` (all fields optional, integer stock, non-negative price, valid category id) with `class-validator`.
 - `auth.service.spec.ts` covers `AuthService.login` (successful login without exposing the password hash, `UnauthorizedException` on invalid credentials) and `AuthService.getProfile` (current user returned from the database, error propagated when the user no longer exists).
 - `auth.controller.spec.ts` covers `GET /auth/me`, ensuring the profile is resolved from the id inside the validated token.
 - `jwt.strategy.spec.ts` covers `JwtStrategy.validate`.
 
 ### E2E tests (Supertest)
-Boot the full NestJS application and issue real HTTP requests against a real PostgreSQL database, validating routing, validation, guards, JWT authentication and persistence together.
+Boot the full NestJS application (with the same global `ValidationPipe` used in production, via `configureApp` in `src/app.setup.ts`) and issue real HTTP requests against a real PostgreSQL database, validating routing, validation, guards, JWT authentication and persistence together.
 - `app.e2e-spec.ts`: public product listing (`GET /products`).
 - `categories.e2e-spec.ts`: category management. Public listing, `401` without a token, `403` for a regular `USER`, `201` for an `ADMIN`, `409` on duplicates, and `409` when deleting a category that still has products.
+- `products.e2e-spec.ts`: product update (`PATCH /products/:id`). `401` without a token, `403` for a regular `USER`, `404` for an unknown product, `400` for a non-existent category, and `200` for an `ADMIN` updating only the provided fields.
 - `orders.e2e-spec.ts`: order placement flow. Verifies that `POST /orders` returns `401` without a token and `201` for an authenticated user.
 
 > ⚠️ **E2E prerequisites:** the database must be running and migrated (`docker compose up postgres -d` and `npx prisma migrate dev`). The tests use the database defined in `backend/.env` and create temporary records (test users, categories, a test product and their orders). These are removed in `afterAll`, and the cleanup is scoped to the data created by the test. Even so, prefer a dedicated database for testing rather than one holding data you care about.
@@ -148,7 +150,7 @@ The seed also creates **6 categories** and **21 sample products** (apparel, mugs
 ## 🔒 Access Roles & Permissions (RBAC)
 
 * **Customer (`USER`):** Can browse products, view product details, manage cart items, proceed to checkout, view purchase history under *"My Orders"*, and log in or register.
-* **Administrator (`ADMIN`):** Has full access to the **Admin Panel** (`/admin/products`) to create and delete products and to create and delete categories. A category that still has products cannot be deleted (`409 Conflict`).
+* **Administrator (`ADMIN`):** Has full access to the **Admin Panel** (`/admin/products`) to create, edit and delete products and to create and delete categories. Editing is done on a dedicated page (`/admin/products/:id/edit`), reached from the pencil icon in the products table. A category that still has products cannot be deleted (`409 Conflict`).
 
 ---
 
@@ -175,6 +177,7 @@ The access token is stored in `localStorage` (`@DevStore:token`). This is a **de
 - [x] Persistent shopping cart via **Zustand**.
 - [x] Complete checkout flow and order history tracking (`MyOrders`).
 - [x] Restricted Admin Panel for inventory management.
+- [x] Product editing (`PATCH /products/:id`) on a dedicated admin page, sharing the same form component used to register products.
 - [x] Product categories managed by the admin (create/delete), selected via dropdown when registering a product and used to filter the storefront.
 - [x] Full Docker & Nginx containerization.
 

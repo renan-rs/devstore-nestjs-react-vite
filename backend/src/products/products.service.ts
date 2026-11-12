@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -38,6 +39,26 @@ export class ProductsService {
         }
 
         return product;
+    }
+
+    async update(id: string, updateProductDto: UpdateProductDto){
+        await this.findOne(id); // Garante que existe antes de atualizar
+
+        if(updateProductDto.categoryId){
+            const category = await this.prisma.category.findUnique({
+                where: {id: updateProductDto.categoryId},
+            });
+
+            if(!category){
+                throw new BadRequestException('Categoria não encontrada');
+            }
+        }
+
+        return this.prisma.product.update({
+            where: {id},
+            data: updateProductDto,
+            include: {category: true},
+        });
     }
 
     async remove(id: string){
